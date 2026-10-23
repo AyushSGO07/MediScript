@@ -1,0 +1,20 @@
+# Git Attributes & GitHub Linguist Analytics Configuration
+
+# Exclude package locks from language statistics
+package-lock.json linguist-generated
+*.lock linguist-generated
+
+# Exclude binary SQLite database from language statistics & diffs
+mediscript.db binary linguist-generated -diff
+
+# Treat markdown specifications as documentation
+*.md linguist-documentation
+
+# Ensure consistent line endings across platforms
+*.py text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.html text eol=lf
