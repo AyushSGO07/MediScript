@@ -211,6 +211,18 @@ export type FindingCategory =
   | 'Safety'
   | 'General';
 
+export interface FindingDecision {
+  id: string;
+  finding_id: string;
+  review_id: string;
+  prior_status: FindingStatus | string;
+  new_status: FindingStatus | string;
+  actor: string;
+  actor_role?: string;
+  note?: string;
+  created_at: string;
+}
+
 export interface Finding {
   id: string;
   review_id: string;
@@ -232,6 +244,8 @@ export interface Finding {
   norm_y0?: number;
   norm_x1?: number;
   norm_y1?: number;
+  latest_decision?: FindingDecision;
+  decision_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -304,5 +318,84 @@ export interface DiffPromoteRequest {
   severity?: 'Critical' | 'Major' | 'Minor' | string;
   explanation?: string;
 }
+
+export interface ActivityEvent {
+  id: string;
+  workspace_id?: string;
+  project_id?: string;
+  review_id?: string;
+  event_type: string;
+  actor: string;
+  details: Record<string, any>;
+  created_at: string;
+}
+
+export interface ActivityListResponse {
+  total: number;
+  items: ActivityEvent[];
+  limit: number;
+  offset: number;
+}
+
+export interface ActivityTypeCount {
+  event_type: string;
+  count: number;
+}
+
+export interface DocumentHashInfo {
+  filename: string;
+  file_size_bytes: number;
+  sha256: string;
+  page_count: number;
+  role: string;
+}
+
+export interface ReportPreview {
+  review_id: string;
+  review_name: string;
+  project_name: string;
+  status: string;
+  checklist_name: string;
+  checklist_version: string;
+  evaluated_at?: string;
+  total_rules_evaluated: number;
+  rules_passed: number;
+  rules_failed: number;
+  critical_count: number;
+  major_count: number;
+  minor_count: number;
+  triaged_count: number;
+  baseline_doc?: DocumentHashInfo;
+  revised_doc?: DocumentHashInfo;
+  disclaimer: string;
+}
+
+export interface CitationReference {
+  page_number: number;
+  block_index: number;
+  document_role: string;
+  norm_x0: number;
+  norm_y0: number;
+  norm_x1: number;
+  norm_y1: number;
+  snippet: string;
+}
+
+export interface ChatMessageResponse {
+  answer: string;
+  citations: CitationReference[];
+  is_abstained: boolean;
+  engine: string;
+}
+
+export interface ClinicalImpactSummary {
+  diff_id: string;
+  clinical_risk: 'High' | 'Medium' | 'Low' | string;
+  regulatory_implication: string;
+  plain_language_summary: string;
+  suggested_action: string;
+  confidence_score?: number;
+}
+
 
 

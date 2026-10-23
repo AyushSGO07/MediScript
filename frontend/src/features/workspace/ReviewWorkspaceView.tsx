@@ -8,8 +8,9 @@ import { EvidenceSearchBar } from './EvidenceSearchBar';
 import { FindingActionQueue } from './FindingActionQueue';
 import { ReviewFindingsModal } from '../findings/ReviewFindingsModal';
 import { ReviewDiffModal } from '../diff/ReviewDiffModal';
+import { ReviewChatDrawer } from '../chat/ReviewChatDrawer';
 import { useApp } from '../../context/AppContext';
-import { FindingStatus } from '../../types';
+import { FindingStatus, CitationReference } from '../../types';
 import { api } from '../../lib/api';
 import { Loader2 } from 'lucide-react';
 
@@ -28,8 +29,21 @@ export const ReviewWorkspaceView: React.FC<ReviewWorkspaceViewProps> = ({
   // Modals for evaluation and diff from header
   const [isEvaluationOpen, setIsEvaluationOpen] = useState(false);
   const [isDiffOpen, setIsDiffOpen] = useState(false);
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
 
   const parentProject = projects.find((p) => p.id === workspace.review?.project_id);
+
+  const handleJumpToCitation = (citation: CitationReference) => {
+    if (citation.document_role && citation.document_role !== workspace.activeRole) {
+      workspace.setActiveRole(citation.document_role as 'baseline' | 'revised');
+    }
+    if (citation.page_number && citation.page_number !== workspace.activePage) {
+      workspace.setActivePage(citation.page_number);
+    }
+    const centerX = ((citation.norm_x0 + citation.norm_x1) / 2) * 595.28;
+    const centerY = ((citation.norm_y0 + citation.norm_y1) / 2) * 841.89;
+    workspace.setPan({ x: -centerX / 4, y: -centerY / 4 });
+  };
 
   const handleUpdateFindingStatus = async (findingId: string, status: FindingStatus) => {
     try {
@@ -130,6 +144,7 @@ export const ReviewWorkspaceView: React.FC<ReviewWorkspaceViewProps> = ({
         onBack={onBack}
         onRunEvaluation={() => setIsEvaluationOpen(true)}
         onRunDiff={() => setIsDiffOpen(true)}
+        onOpenCopilot={() => setIsCopilotOpen(true)}
       />
 
       {/* 2. Three-Panel Layout Body */}
@@ -198,6 +213,14 @@ export const ReviewWorkspaceView: React.FC<ReviewWorkspaceViewProps> = ({
           onDiffUpdated={() => workspace.refreshAll()}
         />
       )}
+
+      {/* Grounded AI Review Copilot Drawer */}
+      <ReviewChatDrawer
+        isOpen={isCopilotOpen}
+        onClose={() => setIsCopilotOpen(false)}
+        reviewId={reviewId}
+        onJumpToCitation={handleJumpToCitation}
+      />
     </div>
   );
 };

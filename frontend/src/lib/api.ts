@@ -14,10 +14,17 @@ import {
   ChecklistRule,
   Finding,
   FindingStatus,
+  FindingDecision,
+  ActivityEvent,
+  ActivityListResponse,
+  ActivityTypeCount,
   ReviewEvaluationResponse,
   DiffItem,
   DiffSummaryResponse,
   DiffPromoteRequest,
+  ReportPreview,
+  ChatMessageResponse,
+  ClinicalImpactSummary,
 } from '../types';
 
 const BASE_URL = '/api';
@@ -296,4 +303,147 @@ export const api = {
       `/reviews/${reviewId}/diff/${diffId}/promote`,
       { method: 'POST', body: JSON.stringify(data) }
     ),
+
+  // Finding Decisions & Audit History
+  recordFindingDecision: (
+    findingId: string,
+    data: { new_status: FindingStatus | string; note?: string; actor?: string; actor_role?: string }
+  ) => {
+    const role = getStoredRole();
+    const actor = data.actor || getRoleLabel(role);
+    return fetchJson<FindingDecision>(`/findings/${findingId}/decisions`, {
+      method: 'POST',
+      body: JSON.stringify({ ...data, actor, actor_role: role }),
+    });
+  },
+  getFindingDecisions: (findingId: string) =>
+    fetchJson<FindingDecision[]>(`/findings/${findingId}/decisions`),
+
+  // Activity Audit Trail
+  getActivityEvents: (filters?: {
+    project_id?: string;
+    review_id?: string;
+    event_type?: string;
+    actor?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== '') params.append(k, String(v));
+      });
+    }
+    const qs = params.toString();
+    return fetchJson<ActivityListResponse>(`/activity${qs ? `?${qs}` : ''}`);
+  },
+  getActivityTypes: () => fetchJson<ActivityTypeCount[]>('/activity/types'),
+  getActivityEvent: (id: string) => fetchJson<ActivityEvent>(`/activity/${id}`),
+
+  // Reports & Formal Audit Export
+  getReportPreview: (reviewId: string) =>
+    fetchJson<ReportPreview>(`/reviews/${reviewId}/reports/preview`),
+
+  getPdfReportUrl: (reviewId: string, reviewerName?: string, reviewerRole?: string) => {
+    const params = new URLSearchParams();
+    if (reviewerName) params.append('reviewer_name', reviewerName);
+    if (reviewerRole) params.append('reviewer_role', reviewerRole);
+    const qs = params.toString();
+    return `${BASE_URL}/reviews/${reviewId}/reports/pdf${qs ? `?${qs}` : ''}`;
+  },
+
+  getJsonPackageUrl: (reviewId: string) => `${BASE_URL}/reviews/${reviewId}/reports/json`,
+
+  downloadPdfReport: async (reviewId: string, reviewerName?: string, reviewerRole?: string) => {
+    const role = getStoredRole();
+    const actor = reviewerName || getRoleLabel(role);
+    const params = new URLSearchParams();
+    params.append('reviewer_name', actor);
+    if (reviewerRole) params.append('reviewer_role', reviewerRole);
+
+    const res = await fetch(`${BASE_URL}/reviews/${reviewId}/reports/pdf?${params.toString()}`, {
+      headers: {
+        'X-Actor-Role': getRoleLabel(role),
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to download PDF report: ${res.statusText}`);
+    }
+
+    const blob = await res.blob();
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="?([^";]+)"?/);
+    const filename = match ? match[1] : `MediScript_Audit_Report_${reviewId}.pdf`;
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
+
+  downloadJsonPackage: async (reviewId: string) => {
+    const role = getStoredRole();
+    const res = await fetch(`${BASE_URL}/reviews/${reviewId}/reports/json`, {
+      headers: {
+        'X-Actor-Role': getRoleLabel(role),
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to export JSON package: ${res.statusText}`);
+    }
+
+    const blob = await res.blob();
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="?([^";]+)"?/);
+    const filename = match ? match[1] : `MediScript_Review_Package_${reviewId}.json`;
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
+
+  // Phase 10: Bounded AI Assistance & Grounded Chat
+  sendReviewChat: (
+    reviewId: string,
+    query: string,
+    documentRole: string = 'revised'
+  ): Promise<ChatMessageResponse> =>
+    fetchJson<ChatMessageResponse>(`/reviews/${reviewId}/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ query, document_role: documentRole }),
+    }),
+
+  getDiffClinicalImpact: (
+    reviewId: string,
+    diffId: string
+  ): Promise<ClinicalImpactSummary> =>
+    fetchJson<ClinicalImpactSummary>(`/reviews/${reviewId}/diffs/${diffId}/impact`),
+
+  // Phase 10: 1-Click Synthetic Demo Showcase
+  loadDemoReview: (): Promise<{
+    success: boolean;
+    review_id: string;
+    project_id: string;
+    message: string;
+  }> =>
+    fetchJson<{
+      success: boolean;
+      review_id: string;
+      project_id: string;
+      message: string;
+    }>('/demo/load', {
+      method: 'POST',
+    }),
 };

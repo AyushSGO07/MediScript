@@ -10,6 +10,11 @@ from app.api.fields import router as fields_router
 from app.api.checklists import router as checklists_router
 from app.api.findings import router as findings_router
 from app.api.diff import diff_router
+from app.api.activity import router as activity_router
+from app.api.reports import router as reports_router
+from app.api.assistance import router as assistance_router
+from app.api.chat import router as chat_router
+from app.api.demo import router as demo_router
 from app.db.init_db import init_db
 from app.db.session import AsyncSessionLocal
 from app.services.checklist_service import ChecklistService
@@ -46,6 +51,11 @@ app.include_router(fields_router, prefix="/api")
 app.include_router(checklists_router, prefix="/api")
 app.include_router(findings_router, prefix="/api")
 app.include_router(diff_router, prefix="/api")
+app.include_router(activity_router, prefix="/api")
+app.include_router(reports_router, prefix="/api")
+app.include_router(assistance_router, prefix="/api")
+app.include_router(chat_router, prefix="/api")
+app.include_router(demo_router, prefix="/api")
 
 @app.get("/api/health", tags=["System"])
 async def health_check():

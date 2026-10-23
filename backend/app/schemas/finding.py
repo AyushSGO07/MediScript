@@ -66,6 +66,37 @@ class FindingUpdate(BaseModel):
         return norm
 
 
+class FindingDecisionCreate(BaseModel):
+    new_status: str
+    note: Optional[str] = None
+    actor: Optional[str] = None
+    actor_role: Optional[str] = None
+
+    @field_validator("new_status")
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        norm = v.strip().title()
+        if norm not in FindingStatus.ALL:
+            if v.strip().lower() == "under investigation":
+                return FindingStatus.UNDER_INVESTIGATION
+            raise ValueError(f"Invalid finding status '{v}'. Allowed values: {sorted(list(FindingStatus.ALL))}")
+        return norm
+
+
+class FindingDecisionResponse(BaseModel):
+    id: str
+    finding_id: str
+    review_id: str
+    prior_status: str
+    new_status: str
+    actor: str
+    actor_role: Optional[str] = None
+    note: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class FindingResponse(FindingBase):
     id: str
     review_id: str
@@ -73,6 +104,8 @@ class FindingResponse(FindingBase):
     diff_item_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    latest_decision: Optional[FindingDecisionResponse] = None
+    decision_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 

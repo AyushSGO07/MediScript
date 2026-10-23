@@ -8,6 +8,9 @@ backend/.venv/
 .pytest_cache/
 *.db-shm
 *.db-wal
+backend/*.db
+backend/*.db-shm
+backend/*.db-wal
 
 # Node
 frontend/node_modules/

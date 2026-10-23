@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ArrowLeft,
   Columns,
@@ -6,9 +6,14 @@ import {
   Play,
   GitCompare,
   Layers,
+  FileDown,
+  FileText,
+  Code,
+  Sparkles,
 } from 'lucide-react';
 import { Review } from '../../types';
 import { StatusBadge } from '../../components/common/StatusBadge';
+import { api } from '../../lib/api';
 
 interface ReviewWorkspaceHeaderProps {
   review: Review;
@@ -20,6 +25,7 @@ interface ReviewWorkspaceHeaderProps {
   onBack: () => void;
   onRunEvaluation: () => void;
   onRunDiff: () => void;
+  onOpenCopilot?: () => void;
 }
 
 export const ReviewWorkspaceHeader: React.FC<ReviewWorkspaceHeaderProps> = ({
@@ -32,7 +38,35 @@ export const ReviewWorkspaceHeader: React.FC<ReviewWorkspaceHeaderProps> = ({
   onBack,
   onRunEvaluation,
   onRunDiff,
+  onOpenCopilot,
 }) => {
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportPdf = async () => {
+    try {
+      setIsExporting(true);
+      setShowExportMenu(false);
+      await api.downloadPdfReport(review.id);
+    } catch (err) {
+      console.error('Failed to export PDF:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportJson = async () => {
+    try {
+      setIsExporting(true);
+      setShowExportMenu(false);
+      await api.downloadJsonPackage(review.id);
+    } catch (err) {
+      console.error('Failed to export JSON:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <header className="h-14 px-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-4 select-none shrink-0 z-30">
       {/* Left: Back button & Breadcrumb */}
@@ -125,8 +159,17 @@ export const ReviewWorkspaceHeader: React.FC<ReviewWorkspaceHeaderProps> = ({
         </div>
       </div>
 
-      {/* Right: Quick Review Execution Actions */}
+      {/* Right: Review Execution & Export Actions */}
       <div className="flex items-center space-x-2 shrink-0">
+        <button
+          onClick={onOpenCopilot}
+          className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-teal-500/20 to-emerald-500/20 hover:from-teal-500/30 hover:to-emerald-500/30 text-teal-300 border border-teal-500/40 shadow-sm transition-all"
+          title="Open Grounded AI Review Copilot"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-teal-400 animate-pulse" />
+          <span>AI Copilot</span>
+        </button>
+
         <button
           onClick={onRunEvaluation}
           className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-600/20 transition-all"
@@ -138,12 +181,54 @@ export const ReviewWorkspaceHeader: React.FC<ReviewWorkspaceHeaderProps> = ({
 
         <button
           onClick={onRunDiff}
-          className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700/80 transition-all"
+          className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-750 text-teal-300 border border-slate-700/80 transition-all"
           title="Run / Inspect Deterministic Revision Diff"
         >
           <GitCompare className="w-3.5 h-3.5" />
           <span>Diff</span>
         </button>
+
+        {/* Quick Export Menu */}
+        <div className="relative">
+          <button
+            onClick={() => setShowExportMenu(!showExportMenu)}
+            disabled={isExporting}
+            className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700/80 transition-all"
+            title="Export ReportLab PDF or JSON Package"
+          >
+            <FileDown className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Export</span>
+          </button>
+
+          {showExportMenu && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="absolute right-0 top-10 w-52 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1.5 z-50 space-y-1 text-xs animate-in fade-in duration-100"
+            >
+              <button
+                onClick={handleExportPdf}
+                className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-left text-slate-200 hover:bg-slate-800 hover:text-white transition-colors group"
+              >
+                <FileText className="w-4 h-4 text-indigo-400 group-hover:text-indigo-300 shrink-0" />
+                <div>
+                  <div className="font-semibold text-white">Audit PDF Report</div>
+                  <div className="text-[10px] text-slate-400">Formal ReportLab PDF</div>
+                </div>
+              </button>
+
+              <button
+                onClick={handleExportJson}
+                className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-left text-slate-200 hover:bg-slate-800 hover:text-white transition-colors group"
+              >
+                <Code className="w-4 h-4 text-teal-400 group-hover:text-teal-300 shrink-0" />
+                <div>
+                  <div className="font-semibold text-white">JSON Package</div>
+                  <div className="text-[10px] text-slate-400">Machine-readable v1.0</div>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

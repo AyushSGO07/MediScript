@@ -6,7 +6,8 @@ import { ProjectsView } from './features/projects/ProjectsView';
 import { ReviewsView } from './features/reviews/ReviewsView';
 import { RequirementsView } from './features/requirements/RequirementsView';
 import { ReviewWorkspaceView } from './features/workspace/ReviewWorkspaceView';
-import { FileText, History } from 'lucide-react';
+import { ActivityTrailView } from './features/activity/ActivityTrailView';
+import { ReportsView } from './features/reports/ReportsView';
 
 const ViewContainer: React.FC = () => {
   const { currentView, selectedReviewId, setSelectedReviewId } = useApp();
@@ -30,29 +31,9 @@ const ViewContainer: React.FC = () => {
     case 'requirements':
       return <RequirementsView />;
     case 'reports':
-      return (
-        <div className="bg-[#1E293B] border border-slate-700/60 rounded-xl p-12 text-center max-w-lg mx-auto my-12">
-          <div className="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 flex items-center justify-center mx-auto mb-3">
-            <FileText className="w-6 h-6" />
-          </div>
-          <h2 className="text-base font-bold text-white">Audit Reports Engine</h2>
-          <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-            Formal ReportLab PDF export and structured JSON audit generation will be connected in <strong>Phase 9</strong>.
-          </p>
-        </div>
-      );
+      return <ReportsView />;
     case 'activity':
-      return (
-        <div className="bg-[#1E293B] border border-slate-700/60 rounded-xl p-12 text-center max-w-lg mx-auto my-12">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-3">
-            <History className="w-6 h-6" />
-          </div>
-          <h2 className="text-base font-bold text-white">Audit Activity Trail</h2>
-          <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-            Append-only decision and activity audit history explorer will be connected in <strong>Phase 8</strong>.
-          </p>
-        </div>
-      );
+      return <ActivityTrailView />;
     case 'settings':
       return (
         <div className="bg-[#1E293B] border border-slate-700/60 rounded-xl p-8 max-w-2xl mx-auto space-y-6">

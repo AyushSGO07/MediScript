@@ -9,6 +9,7 @@
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4+-38B2AC.svg?style=flat&logo=tailwind-css)](https://tailwindcss.com)
 [![PyMuPDF](https://img.shields.io/badge/PyMuPDF-fitz--2.0-red.svg?style=flat)](https://pymupdf.readthedocs.io)
 [![SQLite](https://img.shields.io/badge/SQLite-WAL--Mode-003B57.svg?style=flat&logo=sqlite)](https://sqlite.org)
+[![Pytest](https://img.shields.io/badge/Pytest-77%20Passed-brightgreen.svg?style=flat&logo=pytest)](https://pytest.org)
 
 ---
 
@@ -27,19 +28,19 @@ Medical device packaging and labeling variants span numerous target markets, lan
 ## 2. Core Features & Architecture
 
 ```
-                    ┌─────────────────────────────────────────────────────┐
-                    │               MediScript Architecture               │
-                    └─────────────────────────────────────────────────────┘
-                                               │
-             ┌─────────────────────────────────┼─────────────────────────────────┐
-             │                                 │                                 │
-             ▼                                 ▼                                 ▼
-   [ Stage 01: Ingest & Extract ]     [ Stage 02: Rule & Diff Engine ]  [ Stage 03: 3-Panel Workspace ]
-   • PDF Parsing via PyMuPDF          • Deterministic Rule Engine        • Document Navigation (w-72)
-   • SHA-256 Fingerprinting           • Versioned Checklists             • Evidence Canvas (CSS 3D Pan/Zoom)
-   • Normalized Bounding Boxes [0..1] • 4-Way Sequence Diff Engine       • Resolution-Independent SVG
-   • 4-State Entity Uncertainty       • 1-Click Finding Promotion        • Findings Action Queue (w-96)
-   • High-Res PNG Previews            • Zero External LLM Dependency     • Bidirectional Jump Linkage
+                    ┌─────────────────────────────────────────────────────────────────┐
+                    │                    MediScript Architecture                      │
+                    └─────────────────────────────────────────────────────────────────┘
+                                                       │
+         ┌───────────────────────────────┬─────────────┴─────────────────┬───────────────────────────────┐
+         │                               │                               │                               │
+         ▼                               ▼                               ▼                               ▼
+[ Stage 01: Ingestion ]       [ Stage 02: Verification ]     [ Stage 03: 3-Panel Review ]     [ Stage 04: Audit & Export ]
+• PyMuPDF text & coords       • Deterministic Rule Engine    • Document Nav & SHA-256 cards   • Formal ReportLab PDF Dossier
+• SHA-256 Fingerprinting      • Versioned Checklists         • CSS 3D Hardware Pan/Zoom       • Machine-Readable JSON Export
+• 4-State Entity Taxonomy     • 4-Way Sequence Diff Engine   • Resolution-Independent SVG     • Complete Append-Only Audit Trail
+• High-res 150/200 DPI PNG    • 1-Click Diff Promotion       • Triage Queue & Search Filter   • Grounded AI Review Copilot
+• Normalized BBoxes [0..1]    • Zero LLM Hallucination       • Bidirectional Viewport Jump    • Finding Decision History
 ```
 
 ### 1. Document Ingestion & PyMuPDF Extraction
@@ -73,9 +74,9 @@ Medical device packaging and labeling variants span numerous target markets, lan
 - **Coordinate-Linked Findings:** Every finding is linked to its source document role, page number, text context snippet, and normalized visual coordinates.
 
 ### 5. Deterministic Revision Diff Engine
-- **Sequence Matching:** Utilizes block-level and word-level sequence matching algorithms.
+- **Sequence Matching:** Utilizes block-level and word-level sequence matching algorithms (`difflib.SequenceMatcher`).
 - **4-Way Change Classification:** Classifies all differences into `ADDED`, `DELETED`, `MODIFIED`, or `UNCHANGED`.
-- **Finding Promotion:** Promotes any unapproved text modification into a formal compliance finding with a single click.
+- **Finding Promotion:** Promotes any unapproved text modification into a formal compliance finding with customized severity.
 
 ### 6. Interactive Three-Panel Review Workspace
 - **Layout:**
@@ -86,6 +87,29 @@ Medical device packaging and labeling variants span numerous target markets, lan
 - **In-Document Text Search:** Real-time keyword matching across text blocks with cyan SVG highlights and cycling controls.
 - **Bidirectional Viewport Linkage:** Clicking "Jump to Evidence" automatically switches document role, flips to the cited page, and centers the viewport on the non-compliant bounding box midpoint; clicking a canvas box highlights the finding in the queue.
 
+### 7. Human-in-the-Loop Decision Lifecycle & Workflow
+- **Explicit Reviewer Decisions:** Transition findings between `OPEN`, `RESOLVED`, `ACCEPTED`, `OVERRIDDEN`, `WAIVED`, and `ESCALATED`.
+- **Enforced Compliance Governance:** Mandatory reviewer justification note (minimum 5 characters) strictly required for all `CRITICAL` findings.
+- **Decision History Drawer:** Complete chronological log per finding showing actor, role, prior status, new status, justification notes, and timestamps.
+
+### 8. Multi-Format Regulatory Reports & Audit Dossiers
+- **Formal PDF Export:** ReportLab-powered PDF dossier generator with executive summaries, findings breakdown, visual severity metrics, and reviewer sign-off declaration block.
+- **Machine-Readable JSON Package:** Comprehensive JSON export schema adhering to regulatory audit exchange specifications.
+- **Reports Dashboard (`/reports`):** In-app overview with per-review compliance ratings, severity distribution charts, and quick-download triggers.
+
+### 9. Append-Only Activity Audit Trail
+- **Immutable Event Logging:** Records all system and reviewer actions (`DOCUMENT_UPLOADED`, `ENTITY_OVERRIDDEN`, `CHECKLIST_EVALUATED`, `FINDING_DECISION_RECORDED`, `DIFF_PROMOTED`, etc.).
+- **Audit Explorer (`/activity`):** Interactive timeline with filtering by entity type, actor, severity, and date range, plus full JSON event detail inspection and CSV export.
+
+### 10. Grounded AI Review Copilot & Assistance
+- **Strict Evidence Grounding:** AI chat copilot answers reviewer questions using only the active review's extracted text, bounding boxes, and checklist rules to eliminate hallucination.
+- **Interactive Citation Jumping:** Chat responses cite exact document pages and coordinates; clicking a citation immediately focuses the evidence viewer on the source text.
+- **AI Remediation Suggestions:** Per-finding AI assistance suggesting regulatory rationale, remediation steps, and standard citations.
+
+### 11. One-Click Synthetic Demo Showcase
+- **Instant Demonstration:** Pre-configured demo scenarios (CardioVasc™ Everolimus-Eluting Stent System) pre-loaded with subtle EU MDR and FDA labeling defects (UDI format mismatch, shifted expiry date, omitted sterile symbol).
+- **One-Click Runner:** Quickly initialize, evaluate, and inspect complete reviews without manually uploading files.
+
 ---
 
 ## 3. Technology Stack
@@ -93,20 +117,54 @@ Medical device packaging and labeling variants span numerous target markets, lan
 ### Backend
 - **Language:** Python 3.11+
 - **Framework:** [FastAPI](https://fastapi.tiangolo.com) (Async ASGI)
-- **Database:** SQLite 3 with Write-Ahead Logging (`WAL` mode) via [SQLAlchemy](https://www.sqlalchemy.org) & [Alembic](https://alembic.sqlalchemy.org)
+- **Database:** SQLite 3 with Write-Ahead Logging (`WAL` mode) via [SQLAlchemy](https://www.sqlalchemy.org) & [aiosqlite](https://github.com/omnilib/aiosqlite)
 - **PDF Extraction & Rendering:** [PyMuPDF](https://pymupdf.readthedocs.io) (`fitz`) 2.0+
+- **Dossier & Report Generation:** [ReportLab](https://www.reportlab.com/)
 - **Sequence Diff:** Pure Python `difflib.SequenceMatcher`
 - **Testing:** [pytest](https://docs.pytest.org), `pytest-asyncio`, `httpx`
 
 ### Frontend
 - **Framework:** [React 18](https://react.dev) with [TypeScript](https://www.typescriptlang.org)
 - **Bundler:** [Vite 5](https://vitejs.dev)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com) (Figma-inspired Dark Slate design token palette)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com) (Dark Slate token palette)
 - **Icons:** [Lucide React](https://lucide.dev)
 
 ---
 
-## 4. Getting Started
+## 4. API Endpoints Reference
+
+| Prefix | Method & Path | Description |
+|---|---|---|
+| **Projects** | `GET /api/projects` | List all projects with review counts |
+| | `POST /api/projects` | Create a new project workspace |
+| **Reviews** | `GET /api/reviews` | List reviews with status filters |
+| | `POST /api/reviews` | Create a review linked to baseline and revised PDFs |
+| | `GET /api/reviews/{id}` | Get review details, attached documents, and checklist version |
+| **Documents** | `POST /api/documents/upload` | Upload label PDF, compute SHA-256 hash, cache page previews |
+| | `GET /api/documents/{id}/pages/{page}/preview` | Fetch rendered 150/200 DPI PNG page preview |
+| | `GET /api/documents/{id}/blocks` | Get extracted text blocks and normalized bounding boxes |
+| **Entities** | `GET /api/documents/{id}/fields` | Fetch extracted structured medical fields with uncertainty status |
+| | `PUT /api/fields/{id}/override` | Reviewer override of an extracted entity with audit logging |
+| **Checklists** | `GET /api/checklists` | List regulatory checklists (FDA 21 CFR, EU MDR, custom) |
+| | `POST /api/checklists/upload` | Import checklist from CSV or JSON schema |
+| | `POST /api/checklists/{id}/versions` | Create immutable new checklist revision |
+| **Findings** | `POST /api/reviews/{id}/evaluate` | Run deterministic compliance rule engine |
+| | `GET /api/reviews/{id}/findings` | Retrieve all findings with coordinate linkages and filter tabs |
+| | `POST /api/findings/{id}/decisions` | Record human triage decision (mandatory note for Critical) |
+| | `GET /api/findings/{id}/decisions` | Fetch chronological decision history log |
+| **Revision Diff** | `POST /api/reviews/{id}/diff` | Execute 4-way sequence revision diff |
+| | `POST /api/reviews/{id}/diffs/{diff_id}/promote` | Promote diff item into a formal compliance finding |
+| **Reports** | `GET /api/reviews/{id}/reports/summary` | Executive compliance summary & metrics |
+| | `GET /api/reviews/{id}/reports/pdf` | Generate and download formal ReportLab audit PDF |
+| | `GET /api/reviews/{id}/reports/json` | Export machine-readable JSON compliance package |
+| **Audit Activity** | `GET /api/activity` | Query append-only audit trail with entity and actor filters |
+| **AI Copilot** | `POST /api/chat/reviews/{id}` | Ask grounded queries citing exact document coordinates |
+| | `GET /api/assistance/findings/{id}/remediation` | Retrieve regulatory guidance & remediation suggestion |
+| **Demo Showcase** | `POST /api/demo/create-showcase` | Seed synthetic stent label review with intentional defects |
+
+---
+
+## 5. Getting Started
 
 ### Prerequisites
 - **Python 3.11+**
@@ -122,6 +180,7 @@ cd MediScript
 ```bash
 # Create and activate Python virtual environment
 python -m venv backend/.venv
+
 # On Windows (PowerShell):
 .\backend\.venv\Scripts\Activate.ps1
 # On Linux/macOS:
@@ -134,19 +193,20 @@ pip install -r backend/requirements.txt
 # Windows (PowerShell):
 $env:PYTHONPATH="backend"
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+
 # Linux/macOS:
 PYTHONPATH=backend python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
-The backend API and OpenAPI docs will be available at:
+The backend API and OpenAPI documentation will be available at:
 - API Root: `http://127.0.0.1:8000/api`
-- Interactive Docs: `http://127.0.0.1:8000/docs`
+- Interactive OpenAPI Docs: `http://127.0.0.1:8000/docs`
 
 ### 3. Frontend Setup
 ```bash
 # Navigate to frontend folder
 cd frontend
 
-# Install npm packages
+# Install dependencies
 npm install
 
 # Run frontend development server
@@ -156,28 +216,28 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## 5. Running Automated Tests
+## 6. Running Automated Tests
 
-MediScript includes comprehensive unit and integration test suites:
+MediScript includes 77 automated test cases spanning 26 test suites covering extraction, diff engine, deterministic rules, decision workflows, audit trails, reports, and AI assistance:
 
 ```bash
 # Run all backend test suites
-$env:PYTHONPATH="backend"
-backend\.venv\Scripts\python.exe -m pytest backend/tests
+cd backend
+.\.venv\Scripts\python.exe -m pytest tests
 
-# Run frontend production build & type checks
-cd frontend
+# Run frontend type-check & production build
+cd ../frontend
 npm run build
 ```
 
 ---
 
-## 6. Regulatory & Compliance Notice
+## 7. Regulatory & Compliance Notice
 
 MediScript is an engineering prototype developed for medical device label verification assistance. It is designed to demonstrate automated evidence linking, deterministic checklist evaluation, and revision intelligence. It does not constitute formal legal certification or replace qualified regulatory affairs review under FDA or EU MDR directives.
 
 ---
 
-## 7. License
+## 8. License
 
 Distributed under the MIT License. See `LICENSE` for more information.

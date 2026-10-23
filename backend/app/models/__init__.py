@@ -14,6 +14,7 @@ from app.models.checklist import (
     VersionStatus,
 )
 from app.models.finding import Finding, FindingStatus, FindingCategory
+from app.models.finding_decision import FindingDecision
 from app.models.diff_item import DiffItem
 from app.services.diff_engine import DiffType, DiffCategory
 
@@ -37,6 +38,7 @@ __all__ = [
     "Finding",
     "FindingStatus",
     "FindingCategory",
+    "FindingDecision",
     "DiffItem",
     "DiffType",
     "DiffCategory",

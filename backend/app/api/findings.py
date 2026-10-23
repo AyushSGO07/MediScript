@@ -10,6 +10,7 @@ from app.models.document import Document
 from app.models.checklist import ChecklistVersion, ChecklistRule, VersionStatus, SeverityLevel
 from app.models.extracted_field import ExtractedField
 from app.models.finding import Finding, FindingStatus, FindingCategory
+from app.models.finding_decision import FindingDecision
 from app.models.activity import ActivityEvent
 from app.models.project import Project
 from app.services.rule_engine import RuleEngineService
@@ -17,6 +18,8 @@ from app.services.entity_service import EntityService
 from app.schemas.finding import (
     FindingResponse,
     FindingUpdate,
+    FindingDecisionCreate,
+    FindingDecisionResponse,
     ReviewEvaluationResponse,
 )
 
@@ -280,3 +283,103 @@ async def update_finding(
     await db.commit()
     await db.refresh(finding)
     return FindingResponse.model_validate(finding)
+
+
+@router.post("/findings/{finding_id}/decisions", response_model=FindingDecisionResponse)
+async def record_finding_decision(
+    finding_id: str,
+    payload: FindingDecisionCreate,
+    x_actor_role: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Record an explicit compliance triage decision on a finding.
+    Enforces REVW-02: Mandatory justification note (>= 5 chars) for Critical severity findings.
+    """
+    res = await db.execute(select(Finding).where(Finding.id == finding_id))
+    finding = res.scalar_one_or_none()
+    if not finding:
+        raise HTTPException(status_code=404, detail="Finding not found")
+
+    # REVW-02: Mandatory note validation for Critical findings
+    note_clean = (payload.note or "").strip()
+    if finding.severity == SeverityLevel.CRITICAL:
+        if len(note_clean) < 5:
+            raise HTTPException(
+                status_code=400,
+                detail="Reviewer justification note is strictly mandatory for Critical findings (minimum 5 characters).",
+            )
+
+    prior_status = finding.status
+    finding.status = payload.new_status
+    finding.updated_at = datetime.now(timezone.utc)
+
+    actor = payload.actor or "Reviewer"
+    actor_role = x_actor_role or payload.actor_role or "reviewer"
+
+    decision = FindingDecision(
+        finding_id=finding.id,
+        review_id=finding.review_id,
+        prior_status=prior_status,
+        new_status=payload.new_status,
+        actor=actor,
+        actor_role=actor_role,
+        note=note_clean if note_clean else None,
+    )
+    db.add(decision)
+
+    # Activity Event
+    r_res = await db.execute(select(Review).where(Review.id == finding.review_id))
+    review = r_res.scalar_one_or_none()
+    project_id = review.project_id if review else None
+    workspace_id = None
+    if project_id:
+        p_res = await db.execute(select(Project).where(Project.id == project_id))
+        proj = p_res.scalar_one_or_none()
+        workspace_id = proj.workspace_id if proj else None
+
+    activity = ActivityEvent(
+        workspace_id=workspace_id,
+        project_id=project_id,
+        review_id=finding.review_id,
+        event_type="FINDING_DECISION_RECORDED",
+        actor=actor,
+    )
+    activity.details = {
+        "finding_id": finding.id,
+        "rule_key": finding.rule_key,
+        "severity": finding.severity,
+        "prior_status": prior_status,
+        "new_status": payload.new_status,
+        "actor_role": actor_role,
+        "note": note_clean if note_clean else None,
+    }
+    db.add(activity)
+
+    await db.commit()
+    await db.refresh(decision)
+    await db.refresh(finding)
+    return FindingDecisionResponse.model_validate(decision)
+
+
+@router.get("/findings/{finding_id}/decisions", response_model=List[FindingDecisionResponse])
+async def list_finding_decisions(
+    finding_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Retrieve complete chronological decision history for a finding (newest first).
+    """
+    res = await db.execute(select(Finding).where(Finding.id == finding_id))
+    finding = res.scalar_one_or_none()
+    if not finding:
+        raise HTTPException(status_code=404, detail="Finding not found")
+
+    q = (
+        select(FindingDecision)
+        .where(FindingDecision.finding_id == finding_id)
+        .order_by(FindingDecision.created_at.desc())
+    )
+    d_res = await db.execute(q)
+    decisions = d_res.scalars().all()
+    return [FindingDecisionResponse.model_validate(d) for d in decisions]

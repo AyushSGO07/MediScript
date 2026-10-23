@@ -50,3 +50,18 @@ class Finding(BaseModel):
 
     review = relationship("Review", back_populates="findings")
     rule = relationship("ChecklistRule", lazy="selectin")
+    decisions = relationship(
+        "FindingDecision",
+        back_populates="finding",
+        cascade="all, delete-orphan",
+        order_by="desc(FindingDecision.created_at)",
+        lazy="selectin",
+    )
+
+    @property
+    def latest_decision(self):
+        return self.decisions[0] if self.decisions else None
+
+    @property
+    def decision_count(self) -> int:
+        return len(self.decisions) if self.decisions else 0

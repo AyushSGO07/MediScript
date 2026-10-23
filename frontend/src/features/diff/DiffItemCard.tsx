@@ -1,7 +1,8 @@
-import React from 'react';
-import { MapPin, Flag, CheckCircle2, ArrowRight } from 'lucide-react';
-import { DiffItem } from '../../types';
+import React, { useState } from 'react';
+import { MapPin, Flag, CheckCircle2, ArrowRight, Sparkles, ChevronDown, ChevronUp, ShieldAlert, Loader2 } from 'lucide-react';
+import { DiffItem, ClinicalImpactSummary } from '../../types';
 import { DiffTypeBadge } from './DiffTypeBadge';
+import { api } from '../../lib/api';
 
 interface DiffItemCardProps {
   diffItem: DiffItem;
@@ -9,6 +10,10 @@ interface DiffItemCardProps {
 }
 
 export const DiffItemCard: React.FC<DiffItemCardProps> = ({ diffItem, onPromote }) => {
+  const [impact, setImpact] = useState<ClinicalImpactSummary | null>(null);
+  const [loadingImpact, setLoadingImpact] = useState(false);
+  const [isImpactOpen, setIsImpactOpen] = useState(false);
+
   const hasBaseCoords =
     diffItem.baseline_norm_x0 !== null &&
     diffItem.baseline_norm_x0 !== undefined &&
@@ -20,6 +25,23 @@ export const DiffItemCard: React.FC<DiffItemCardProps> = ({ diffItem, onPromote 
     diffItem.revised_norm_x0 !== undefined &&
     diffItem.revised_norm_y0 !== null &&
     diffItem.revised_norm_y0 !== undefined;
+
+  const handleToggleImpact = async () => {
+    if (!impact && !loadingImpact) {
+      try {
+        setLoadingImpact(true);
+        const data = await api.getDiffClinicalImpact(diffItem.review_id, diffItem.id);
+        setImpact(data);
+        setIsImpactOpen(true);
+      } catch (err) {
+        console.error('Failed to load clinical impact analysis:', err);
+      } finally {
+        setLoadingImpact(false);
+      }
+    } else {
+      setIsImpactOpen(!isImpactOpen);
+    }
+  };
 
   return (
     <div className="p-4 rounded-lg bg-slate-800/80 border border-slate-700/60 hover:border-slate-600 transition-colors space-y-3">
@@ -41,6 +63,21 @@ export const DiffItemCard: React.FC<DiffItemCardProps> = ({ diffItem, onPromote 
           >
             {diffItem.significance} Priority
           </span>
+
+          {impact && (
+            <span
+              className={`px-2 py-0.5 text-[10px] font-bold rounded flex items-center gap-1 ${
+                impact.clinical_risk === 'High'
+                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                  : impact.clinical_risk === 'Medium'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+              }`}
+            >
+              <ShieldAlert className="w-3 h-3" />
+              {impact.clinical_risk} Clinical Risk
+            </span>
+          )}
         </div>
 
         {/* Page References */}
@@ -107,6 +144,46 @@ export const DiffItemCard: React.FC<DiffItemCardProps> = ({ diffItem, onPromote 
                 + {diffItem.revised_text}
               </div>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* Expandable Clinical Impact Summary (AIAS-02) */}
+      <div className="rounded-lg bg-slate-900/60 border border-slate-700/50 overflow-hidden text-xs">
+        <button
+          onClick={handleToggleImpact}
+          disabled={loadingImpact}
+          className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-slate-800/60 transition-colors text-slate-300"
+        >
+          <div className="flex items-center gap-1.5 font-medium text-teal-400">
+            {loadingImpact ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5" />
+            )}
+            <span>Clinical & Regulatory Impact Analysis (AI Assistant)</span>
+          </div>
+          {isImpactOpen ? (
+            <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+          ) : (
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+          )}
+        </button>
+
+        {isImpactOpen && impact && (
+          <div className="p-3 pt-1 border-t border-slate-800 space-y-2 text-slate-300 bg-slate-950/40">
+            <div>
+              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Summary:</span>
+              <p className="text-xs text-slate-200 mt-0.5">{impact.plain_language_summary}</p>
+            </div>
+            <div>
+              <span className="text-[10px] text-amber-400/90 uppercase font-bold tracking-wider">Regulatory Implication:</span>
+              <p className="text-xs text-slate-300 mt-0.5">{impact.regulatory_implication}</p>
+            </div>
+            <div>
+              <span className="text-[10px] text-emerald-400/90 uppercase font-bold tracking-wider">Recommended Action:</span>
+              <p className="text-xs text-slate-300 mt-0.5">{impact.suggested_action}</p>
+            </div>
           </div>
         )}
       </div>

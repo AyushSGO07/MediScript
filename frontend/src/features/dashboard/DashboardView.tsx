@@ -6,6 +6,7 @@ import { MetricCard } from './MetricCard';
 import { RecentReviewsTable } from './RecentReviewsTable';
 import { CreateReviewModal } from '../reviews/CreateReviewModal';
 import { CreateProjectModal } from '../projects/CreateProjectModal';
+import { DemoReviewBanner } from '../demo/DemoReviewBanner';
 import {
   FileCheck2,
   Clock,
@@ -62,6 +63,9 @@ export const DashboardView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* 1-Click Synthetic Demo Showcase Banner (DEMO-03) */}
+      <DemoReviewBanner />
 
       {/* Real Application Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
